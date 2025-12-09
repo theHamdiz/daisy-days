@@ -1,12 +1,12 @@
 use anyhow::Result;
-use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::io::{self, BufRead};
 use std::sync::Arc;
 
-const DAISYUI_DOCS_URL: &str = "https://daisyui.com/llms.txt";
+// Embed docs directly for offline/wasm usage
+const DAISYUI_DOCS_CONTENT: &str = include_str!("llms.txt");
 
 #[derive(Debug, Clone)]
 struct DocsCache {
@@ -14,18 +14,12 @@ struct DocsCache {
 }
 
 impl DocsCache {
-    async fn fetch_and_parse() -> Result<Self> {
-        let client = Client::new();
-        let content = match client.get(DAISYUI_DOCS_URL).send().await {
-            Ok(resp) => resp.text().await.unwrap_or_default(),
-            Err(_) => String::new(),
-        };
-
+    fn load() -> Self {
         let mut components = HashMap::new();
         let mut current_component = String::new();
         let mut current_content = String::new();
 
-        for line in content.lines() {
+        for line in DAISYUI_DOCS_CONTENT.lines() {
             if let Some(stripped) = line.strip_prefix("### ") {
                 if !current_component.is_empty() {
                     components.insert(current_component.trim().to_lowercase(), current_content.trim().to_string());
@@ -42,7 +36,7 @@ impl DocsCache {
         if !current_component.is_empty() {
              components.insert(current_component.trim().to_lowercase(), current_content.trim().to_string());
         }
-        Ok(DocsCache { components })
+        DocsCache { components }
     }
 
     fn list_components(&self) -> Vec<String> {
@@ -716,7 +710,7 @@ fn create_complex_table(cols: &[String]) -> String {
     format!(r##"<table class="table w-full"><thead><tr>{}</tr></thead><tbody><tr><td>Data</td></tr></tbody></table>"##, headers)
 }
 
-// --- Main Server ---
+// Main Server
 
 #[derive(Serialize, Deserialize, Debug)]
 struct JsonRpcRequest {
@@ -744,13 +738,13 @@ struct JsonRpcError {
     data: Option<Value>,
 }
 
-#[tokio::main]
-async fn main() -> Result<()> {
+// Simple internal handling of requests
+fn main() -> Result<()> {
+    // Engraving
     eprintln!("Daisy Days - Engraved by Ahmad Hamdi");
-    let docs = match DocsCache::fetch_and_parse().await {
-        Ok(d) => Arc::new(d),
-        Err(_) => Arc::new(DocsCache { components: HashMap::new() })
-    };
+    
+    // Load docs from memory
+    let docs = Arc::new(DocsCache::load());
     let concepts = Arc::new(ConceptEngine::new());
     
     let stdin = io::stdin();
@@ -763,16 +757,18 @@ async fn main() -> Result<()> {
             Ok(0) => break,
             Ok(_) => {
                 let req_str = line.trim();
+                let req_str = req_str.trim_matches('\u{0}'); // sanitize
                 if req_str.is_empty() { continue; }
                 
                 match serde_json::from_str::<JsonRpcRequest>(req_str) {
                     Ok(req) => {
-                        let res = handle_request(req, docs.clone(), concepts.clone()).await;
+                        let res = handle_request(req, docs.clone(), concepts.clone());
                         if let Ok(res_str) = serde_json::to_string(&res) {
                             println!("{}", res_str);
                         }
                     }
                     Err(e) => {
+                         // Fallback for minimal error
                          println!(r#"{{"jsonrpc":"2.0","error":{{"code":-32700,"message":"Parse error: {}"}},"id":null}}"#, e);
                     }
                 }
@@ -783,7 +779,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn handle_request(req: JsonRpcRequest, docs: Arc<DocsCache>, concepts: Arc<ConceptEngine>) -> JsonRpcResponse {
+fn handle_request(req: JsonRpcRequest, docs: Arc<DocsCache>, concepts: Arc<ConceptEngine>) -> JsonRpcResponse {
     let id = req.id.clone();
     
     let result = match req.method.as_str() {
@@ -802,7 +798,6 @@ async fn handle_request(req: JsonRpcRequest, docs: Arc<DocsCache>, concepts: Arc
             Ok(json!({
                 "tools": [
                     { "name": "daisyui_idea_to_ui", "description": "Turn a prompt into a stunning UI.", "inputSchema": { "type": "object", "properties": { "prompt": { "type": "string" } }, "required": ["prompt"] } },
-                    // New Universal Tool
                     { 
                         "name": "daisyui_scaffold_layout", 
                         "description": "Generate a modern web layout skeleton.", 
@@ -815,7 +810,6 @@ async fn handle_request(req: JsonRpcRequest, docs: Arc<DocsCache>, concepts: Arc
                             "required": ["layout"]
                         } 
                     },
-                    // Legacy/Existing Wrappers
                     { "name": "daisyui_list_components", "description": "List components.", "inputSchema": { "type": "object", "properties": {} } },
                     { "name": "daisyui_get_docs", "description": "Get docs.", "inputSchema": { "type": "object", "properties": { "component": { "type": "string" } }, "required": ["component"] } },
                     { "name": "daisyui_search", "description": "Search docs.", "inputSchema": { "type": "object", "properties": { "query": { "type": "string" } } } },
@@ -848,7 +842,6 @@ async fn handle_request(req: JsonRpcRequest, docs: Arc<DocsCache>, concepts: Arc
                         let title = args.and_then(|a| a.get("title")).and_then(|v| v.as_str()).unwrap_or("My App");
                         Ok(json!({ "content": [{ "type": "text", "text": LayoutEngine::generate(layout, title) }] }))
                      },
-                     // Passthroughs
                      "daisyui_list_components" => Ok(json!({ "content": [{ "type": "text", "text": docs.list_components().join(", ") }] })),
                      "daisyui_get_docs" => {
                         let c = args.and_then(|a| a.get("component")).and_then(|v| v.as_str()).unwrap_or("");

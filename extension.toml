@@ -1,6 +1,6 @@
 id = "daisy-days"
 name = "Daisy Days"
-version = "0.1.0"
+version = "0.2.0"
 schema_version = 1
 authors = ["Ahmad Hamdi"]
 description = "A high-performance MCP server for DaisyUI that generates production-ready UI layouts."
