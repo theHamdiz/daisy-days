@@ -1,14 +1,16 @@
+[workspace]
+members = ["mcp-server"]
+resolver = "2"
+
 [package]
-name = "daisy_days"
-version = "0.1.0"
+name = "daisy_days_extension"
+version = "0.2.0"
 edition = "2021"
 authors = ["Ahmad Hamdi"]
+description = "Zed extension for DaisyUI"
 
-[[bin]]
-name = "daisy_days"
-path = "src/main.rs"
+[lib]
+crate-type = ["cdylib"]
 
 [dependencies]
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-anyhow = "1.0"
+zed_extension_api = "0.7.0"

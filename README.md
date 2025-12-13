@@ -1,142 +1,59 @@
-# 🌼 Daisy Days
+# Daisy Days
 
-**Engraved by Ahmad Hamdi**
+A high-performance MCP server and Zed extension for DaisyUI with 15 tools that generates production-ready UI layouts.
 
-> A high-performance Model Context Protocol (MCP) server for DaisyUI. Generates production-ready UI layouts efficiently.
+## Project Structure
 
-## 🚀 Overview
+This repository contains two main components:
 
-**Daisy Days** is a rust-based MCP server designed to accelerate UI development. It provides a heuristic "Idea Engine" and a suite of scaffolding tools to generate complex HTML structures instantly.
+### 1. MCP Server (`mcp-server/`)
+A standalone Model Context Protocol server that provides DaisyUI component generation tools.
 
-## ✨ Features
-
-### 🧠 Idea Engine
-
-Turn vague natural language prompts into complete, themed HTML pages.
-
-- **Input**: "I want a dark cyberpunk portfolio for my hacker art"
-- **Output**: A fully coded, responsive portfolio page with a "cyberpunk" theme and "brutalist" styling.
-
-### 🛠️ Productivity Suite
-
-- **Universal Layouts**: Generate any modern skeleton: SaaS, Blog, Social Feed, Inbox, Kanban, Profile, Docs...
-- **E-commerce Ready**: Generate Product and Cart pages instantly.
-- **Authentication**: scalable Login and Register forms.
-- **Form Builder**: JSON-schema driven form generation with validation styles.
-- **Theme Generator**: Create custom CSS themes (Hex/Oklch) effortlessly.
-- **Interactivity**: Get the exact vanilla JS needed for Modals, Drawers, and Toasts.
-
-### 📚 Documentation Access
-
-- **Offline Cache**: Instantly search and retrieve DaisyUI Component docs.
-- **Concept Engine**: Learn how to implement "Glassmorphism" or "Neumorphism" in DaisyUI.
-
-## 📦 Installation & Usage
-
-### Prerequisites
-
-- A compatible MCP Client (e.g., Claude Desktop, specific IDE plugins).
-- [Rust](https://www.rust-lang.org/) (if building from source).
-
-### Running the Server
-
-1. **Build the Release Binary**:
-   ```bash
-   cargo build --release
-   ```
-2. **Configure your MCP Client**:
-   Point your client to the executable located at:
-   `./target/release/daisy_days.exe`
-
-### Example Configuration (Claude Desktop)
-
-Add this to your `claude_desktop_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "daisy-days": {
-      "command": "d:/Dev/RustroverProjects/daisy_mcp/target/release/daisy_days.exe",
-      "args": []
-    }
-  }
-}
+**Build:**
+```bash
+cd mcp-server
+cargo build --release
 ```
 
-## 🎮 Tools & Examples
-
-### 1. The Idea Engine (`daisyui_idea_to_ui`)
-
-**Prompt**: "Build a glassmorphism business dashboard"
-
-```json
-{
-  "name": "daisyui_idea_to_ui",
-  "arguments": {
-    "prompt": "Build a glassmorphism business dashboard"
-  }
-}
+**Run:**
+```bash
+./mcp-server/target/release/daisy_days
 ```
 
-### 2. Scaffold a Layout (`daisyui_scaffold_layout`)
+### 2. Zed Extension (Root & `zed-extensions/`)
+A Zed editor extension that integrates DaisyUI tooling into the editor.
 
-**Layouts**: `saas`, `blog`, `social`, `kanban`, `inbox`, `profile`, `docs`, `dashboard`, `auth`, `store`.
+**Development:**
+- Root directory contains the extension source code
+- `zed-extensions/extensions/daisy-days/` is used by Zed for compilation
 
-```json
-{
-  "name": "daisyui_scaffold_layout",
-  "arguments": {
-    "layout": "kanban",
-    "title": "Project Alpha"
-  }
-}
+**Build:**
+```bash
+cargo build --target wasm32-wasip1 --release
 ```
 
-### 3. Generate a Theme (`daisyui_generate_theme`)
+**Install in Zed:**
+1. Open Zed
+2. Go to Extensions
+3. Click "Install Dev Extension"
+4. Select the `zed-extensions/extensions/daisy-days` directory
 
-**Inputs**: Name, Primary Color, Base Color.
+## Features
 
-```json
-{
-  "name": "daisyui_generate_theme",
-  "arguments": {
-    "name": "midnight-blue",
-    "primary": "#0029ff",
-    "base": "#0f172a"
-  }
-}
-```
+- 15 DaisyUI generation tools
+- Production-ready UI layouts
+- Support for multiple layout types: SaaS, Blog, Social, Kanban, and more
+- Offline documentation access
+- Design concept generation
 
-### 4. Build a Form (`daisyui_scaffold_form`)
+## Version
 
-**Inputs**: Title, Fields List.
+Current version: 0.2.0
 
-```json
-{
-  "name": "daisyui_scaffold_form",
-  "arguments": {
-    "title": "Contact Us",
-    "fields": [
-      { "name": "email", "type": "email", "required": true },
-      { "name": "message", "type": "textarea" }
-    ]
-  }
-}
-```
+## Author
 
-### 5. Get Component Docs (`daisyui_get_docs`)
+Ahmad Hamdi
 
-**Input**: Component Name.
+## Repository
 
-```json
-{
-  "name": "daisyui_get_docs",
-  "arguments": {
-    "component": "modal"
-  }
-}
-```
-
-## 📜 License
-
-This project is authored by **Ahmad Hamdi**.
+https://github.com/theHamdiz/daisy-days

@@ -1,0 +1,15 @@
+[package]
+name = "daisy_days_mcp"
+version = "0.2.0"
+edition = "2021"
+authors = ["Ahmad Hamdi"]
+description = "A high-performance MCP server for DaisyUI with 15 tools that generates production-ready UI layouts."
+
+[[bin]]
+name = "daisy_days"
+path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+anyhow = "1.0"
