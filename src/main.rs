@@ -2,7 +2,7 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::collections::HashMap;
-use std::io::{self, BufRead};
+use std::io::{self, BufRead, Write};
 use std::sync::Arc;
 
 // Embed docs directly for offline/wasm usage
@@ -22,7 +22,10 @@ impl DocsCache {
         for line in DAISYUI_DOCS_CONTENT.lines() {
             if let Some(stripped) = line.strip_prefix("### ") {
                 if !current_component.is_empty() {
-                    components.insert(current_component.trim().to_lowercase(), current_content.trim().to_string());
+                    components.insert(
+                        current_component.trim().to_lowercase(),
+                        current_content.trim().to_string(),
+                    );
                 }
                 current_component = stripped.to_string();
                 current_content = String::new();
@@ -34,7 +37,10 @@ impl DocsCache {
             }
         }
         if !current_component.is_empty() {
-             components.insert(current_component.trim().to_lowercase(), current_content.trim().to_string());
+            components.insert(
+                current_component.trim().to_lowercase(),
+                current_content.trim().to_string(),
+            );
         }
         DocsCache { components }
     }
@@ -48,7 +54,7 @@ impl DocsCache {
     fn get_doc(&self, name: &str) -> Option<String> {
         self.components.get(&name.to_lowercase()).cloned()
     }
-    
+
     fn search(&self, query: &str) -> Vec<(String, String)> {
         let query = query.to_lowercase();
         let mut results = Vec::new();
@@ -57,7 +63,7 @@ impl DocsCache {
                 results.push((name.clone(), content.clone()));
             }
         }
-        results.sort_by(|a, b| a.0.cmp(&b.0)); 
+        results.sort_by(|a, b| a.0.cmp(&b.0));
         results
     }
 }
@@ -80,20 +86,23 @@ struct ConceptEngine {
 impl ConceptEngine {
     fn new() -> Self {
         let mut m = HashMap::new();
-        m.insert("glassmorphism".to_string(), DesignConcept {
-            name: "Glassmorphism".to_string(),
-            description: "Transparency and blur.".to_string(),
-            classes: vec!["glass".to_string(), "backdrop-blur".to_string()],
-            suggestion: "Use .glass on cards.".to_string(),
-            snippet: r##"<div class="card glass"></div>"##.to_string()
-        });
+        m.insert(
+            "glassmorphism".to_string(),
+            DesignConcept {
+                name: "Glassmorphism".to_string(),
+                description: "Transparency and blur.".to_string(),
+                classes: vec!["glass".to_string(), "backdrop-blur".to_string()],
+                suggestion: "Use .glass on cards.".to_string(),
+                snippet: r##"<div class="card glass"></div>"##.to_string(),
+            },
+        );
         Self { concepts: m }
     }
 
     fn get_concept(&self, query: &str) -> Option<&DesignConcept> {
         self.concepts.get(&query.to_lowercase())
     }
-    
+
     fn list_concepts(&self) -> Vec<String> {
         let mut v: Vec<String> = self.concepts.keys().cloned().collect();
         v.sort();
@@ -118,12 +127,13 @@ impl LayoutEngine {
             "dashboard" => Self::dashboard(title),
             "auth" => Self::auth_page(title),
             "store" => Self::store_page(title),
-            _ => Self::saas_landing(title) // Default
+            _ => Self::saas_landing(title), // Default
         }
     }
 
     fn saas_landing(title: &str) -> String {
-        format!(r##"
+        format!(
+            r##"
 <div class="min-h-screen bg-base-100 font-sans">
   <!-- Navbar -->
   <div class="navbar bg-base-100 sticky top-0 z-50 border-b border-base-200">
@@ -183,27 +193,30 @@ impl LayoutEngine {
   <!-- Footer -->
   <footer class="footer p-10 bg-base-300 text-base-content">
     <nav>
-      <header class="footer-title">Services</header> 
+      <header class="footer-title">Services</header>
       <a class="link link-hover">Branding</a>
       <a class="link link-hover">Design</a>
-    </nav> 
+    </nav>
     <nav>
-      <header class="footer-title">Company</header> 
+      <header class="footer-title">Company</header>
       <a class="link link-hover">About us</a>
       <a class="link link-hover">Contact</a>
-    </nav> 
+    </nav>
     <nav>
-      <header class="footer-title">Legal</header> 
+      <header class="footer-title">Legal</header>
       <a class="link link-hover">Terms of use</a>
       <a class="link link-hover">Privacy policy</a>
     </nav>
   </footer>
 </div>
-"##, title)
+"##,
+            title
+        )
     }
 
     fn blog_layout(title: &str) -> String {
-        format!(r##"
+        format!(
+            r##"
 <div class="min-h-screen bg-base-100">
   <div class="navbar bg-base-100 border-b border-base-200">
     <div class="container mx-auto">
@@ -263,7 +276,7 @@ impl LayoutEngine {
               <button class="btn btn-primary join-item">Subscribe</button>
             </div>
          </div>
-         
+
          <div class="mb-6">
            <h3 class="font-bold text-lg mb-4">Categories</h3>
            <div class="flex flex-wrap gap-2">
@@ -277,11 +290,14 @@ impl LayoutEngine {
     </div>
   </div>
 </div>
-"##, title)
+"##,
+            title
+        )
     }
 
     fn social_feed(title: &str) -> String {
-        format!(r##"
+        format!(
+            r##"
 <div class="min-h-screen bg-base-100 flex justify-center">
   <!-- Left Sidebar -->
   <div class="w-64 hidden lg:block p-4 fixed left-0 top-0 h-screen border-r border-base-200 overflow-y-auto">
@@ -351,11 +367,14 @@ impl LayoutEngine {
      </div>
   </div>
 </div>
-"##, title)
+"##,
+            title
+        )
     }
 
     fn kanban_board(title: &str) -> String {
-        format!(r##"
+        format!(
+            r##"
 <div class="h-screen flex flex-col bg-base-200">
   <div class="navbar bg-base-100 shadow-sm px-4">
     <div class="flex-1"><h1 class="text-xl font-bold">{}</h1></div>
@@ -418,11 +437,14 @@ impl LayoutEngine {
     </div>
   </div>
 </div>
-"##, title)
+"##,
+            title
+        )
     }
 
     fn inbox_layout(title: &str) -> String {
-        format!(r##"
+        format!(
+            r##"
 <div class="h-screen flex bg-base-100">
   <!-- Sidebar -->
   <div class="w-64 border-r border-base-200 flex flex-col">
@@ -479,11 +501,14 @@ impl LayoutEngine {
      </div>
   </div>
 </div>
-"##, title)
+"##,
+            title
+        )
     }
 
     fn settings_profile(title: &str) -> String {
-        format!(r##"
+        format!(
+            r##"
 <div class="min-h-screen bg-base-200 p-4 md:p-8">
   <div class="max-w-4xl mx-auto">
      <h1 class="text-3xl font-bold mb-8">{}</h1>
@@ -552,11 +577,14 @@ impl LayoutEngine {
      </div>
   </div>
 </div>
-"##, title)
+"##,
+            title
+        )
     }
 
     fn docs_layout(title: &str) -> String {
-        format!(r##"
+        format!(
+            r##"
 <div class="drawer lg:drawer-open">
   <input id="my-drawer-2" type="checkbox" class="drawer-toggle" />
   <div class="drawer-content flex flex-col">
@@ -569,7 +597,7 @@ impl LayoutEngine {
       </div>
       <div class="flex-1 px-2 mx-2 text-xl font-bold">{}</div>
     </div>
-    
+
     <!-- Main Content -->
     <div class="p-8 md:p-12 max-w-4xl mx-auto w-full">
        <div class="text-sm breadcrumbs mb-4">
@@ -577,7 +605,7 @@ impl LayoutEngine {
        </div>
        <h1 class="text-4xl font-bold mb-6">Installation</h1>
        <p class="mb-4 text-lg">Learn how to get up and running with our library in minutes.</p>
-       
+
        <div class="mockup-code mb-6">
          <pre data-prefix="$"><code>npm install daisy-framework</code></pre>
        </div>
@@ -585,15 +613,15 @@ impl LayoutEngine {
        <h2 class="text-2xl font-bold mt-8 mb-4">Configuration</h2>
        <p class="mb-4">Add the plugin to your config file:</p>
        <p class="mb-4">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
-       
+
        <div class="alert alert-info mt-8">
          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
          <span>Note: Typically requires Node.js 18+.</span>
        </div>
     </div>
-  </div> 
+  </div>
   <div class="drawer-side border-r border-base-200">
-    <label for="my-drawer-2" class="drawer-overlay"></label> 
+    <label for="my-drawer-2" class="drawer-overlay"></label>
     <ul class="menu p-4 w-80 min-h-full bg-base-100 text-base-content">
       <li class="mb-4 text-xl font-bold px-4">{} Docs</li>
       <li>
@@ -615,19 +643,30 @@ impl LayoutEngine {
     </ul>
   </div>
 </div>
-"##, title, title)
+"##,
+            title, title
+        )
     }
 
     fn dashboard(title: &str) -> String {
-        format!(r##"<div class="drawer lg:drawer-open"><input id="my-drawer" type="checkbox" class="drawer-toggle" /><div class="drawer-content flex flex-col"><div class="w-full navbar bg-base-300"><div class="flex-none lg:hidden"><label for="my-drawer" class="btn btn-square btn-ghost"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-6 h-6 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg></label></div><div class="flex-1 px-2 mx-2 text-xl font-bold">{}</div></div><div class="p-6"><h2 class="text-2xl font-bold mb-4">Dashboard</h2></div></div><div class="drawer-side"><label for="my-drawer" class="drawer-overlay"></label><ul class="menu p-4 w-80 min-h-full bg-base-200 text-base-content"><li class="menu-title">Menu</li><li><a>Overview</a></li></ul></div></div>"##, title)
+        format!(
+            r##"<div class="drawer lg:drawer-open"><input id="my-drawer" type="checkbox" class="drawer-toggle" /><div class="drawer-content flex flex-col"><div class="w-full navbar bg-base-300"><div class="flex-none lg:hidden"><label for="my-drawer" class="btn btn-square btn-ghost"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-6 h-6 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg></label></div><div class="flex-1 px-2 mx-2 text-xl font-bold">{}</div></div><div class="p-6"><h2 class="text-2xl font-bold mb-4">Dashboard</h2></div></div><div class="drawer-side"><label for="my-drawer" class="drawer-overlay"></label><ul class="menu p-4 w-80 min-h-full bg-base-200 text-base-content"><li class="menu-title">Menu</li><li><a>Overview</a></li></ul></div></div>"##,
+            title
+        )
     }
-    
+
     fn auth_page(title: &str) -> String {
-        format!(r##"<div class="hero min-h-screen bg-base-200"><div class="card shrink-0 w-full max-w-sm shadow-2xl bg-base-100"><form class="card-body"><h1 class="text-2xl font-bold">{}</h1><div class="form-control"><label class="label"><span class="label-text">Email</span></label><input type="email" class="input input-bordered" required /></div><div class="form-control"><label class="label"><span class="label-text">Password</span></label><input type="password" class="input input-bordered" required /></div><div class="form-control mt-6"><button class="btn btn-primary">Login</button></div></form></div></div>"##, title)
+        format!(
+            r##"<div class="hero min-h-screen bg-base-200"><div class="card shrink-0 w-full max-w-sm shadow-2xl bg-base-100"><form class="card-body"><h1 class="text-2xl font-bold">{}</h1><div class="form-control"><label class="label"><span class="label-text">Email</span></label><input type="email" class="input input-bordered" required /></div><div class="form-control"><label class="label"><span class="label-text">Password</span></label><input type="password" class="input input-bordered" required /></div><div class="form-control mt-6"><button class="btn btn-primary">Login</button></div></form></div></div>"##,
+            title
+        )
     }
-    
+
     fn store_page(title: &str) -> String {
-        format!(r##"<div class="hero min-h-screen bg-base-200"><div class="hero-content text-center"><div class="max-w-md"><h1 class="text-5xl font-bold">{}</h1><button class="btn btn-primary mt-4">Shop Now</button></div></div></div>"##, title)
+        format!(
+            r##"<div class="hero min-h-screen bg-base-200"><div class="hero-content text-center"><div class="max-w-md"><h1 class="text-5xl font-bold">{}</h1><button class="btn btn-primary mt-4">Shop Now</button></div></div></div>"##,
+            title
+        )
     }
 }
 
@@ -638,12 +677,16 @@ struct IdeaEngine;
 impl IdeaEngine {
     fn process_prompt(prompt: &str) -> String {
         let p = prompt.to_lowercase();
-        
+
         let layout = if p.contains("blog") || p.contains("article") || p.contains("news") {
             "blog"
         } else if p.contains("social") || p.contains("twitter") || p.contains("feed") {
             "social"
-        } else if p.contains("kanban") || p.contains("trello") || p.contains("board") || p.contains("task") {
+        } else if p.contains("kanban")
+            || p.contains("trello")
+            || p.contains("board")
+            || p.contains("task")
+        {
             "kanban"
         } else if p.contains("mail") || p.contains("inbox") || p.contains("message") {
             "inbox"
@@ -664,7 +707,6 @@ impl IdeaEngine {
     }
 }
 
-
 // Legacy Generator Wrappers
 // Maintained for backward compatibility
 
@@ -673,7 +715,14 @@ fn generate_dashboard(title: &str, _items: &[String], _style: &str) -> String {
 }
 
 fn generate_auth(auth_type: &str) -> String {
-    LayoutEngine::generate("auth", if auth_type == "login" { "Login" } else { "Sign Up" })
+    LayoutEngine::generate(
+        "auth",
+        if auth_type == "login" {
+            "Login"
+        } else {
+            "Sign Up"
+        },
+    )
 }
 
 fn generate_store(page: &str) -> String {
@@ -681,7 +730,10 @@ fn generate_store(page: &str) -> String {
 }
 
 fn generate_theme(name: &str, primary: &str, secondary: &str, accent: &str, base: &str) -> String {
-    format!(r##"@plugin "daisyui/theme" {{ name: "{}"; --color-primary: {}; --color-secondary: {}; --color-accent: {}; --color-base-100: {}; }}"##, name, primary, secondary, accent, base)
+    format!(
+        r##"@plugin "daisyui/theme" {{ name: "{}"; --color-primary: {}; --color-secondary: {}; --color-accent: {}; --color-base-100: {}; }}"##,
+        name, primary, secondary, accent, base
+    )
 }
 
 fn scaffold_form(title: &str, fields: &[serde_json::Map<String, Value>]) -> String {
@@ -690,7 +742,10 @@ fn scaffold_form(title: &str, fields: &[serde_json::Map<String, Value>]) -> Stri
         let name = f.get("name").and_then(|v| v.as_str()).unwrap_or("unnamed");
         field_html.push_str(&format!(r##"<div class="form-control"><label class="label"><span class="label-text">{}</span></label><input type="text" name="{}" class="input input-bordered" /></div>"##, name, name));
     }
-    format!(r##"<div class="card bg-base-100 w-full max-w-sm shadow-2xl"><form class="card-body"><h2 class="card-title justify-center">{}</h2>{}<div class="form-control mt-6"><button class="btn btn-primary">Submit</button></div></form></div>"##, title, field_html)
+    format!(
+        r##"<div class="card bg-base-100 w-full max-w-sm shadow-2xl"><form class="card-body"><h2 class="card-title justify-center">{}</h2>{}<div class="form-control mt-6"><button class="btn btn-primary">Submit</button></div></form></div>"##,
+        title, field_html
+    )
 }
 
 fn get_script(component: &str) -> String {
@@ -702,12 +757,22 @@ fn get_script(component: &str) -> String {
 }
 
 fn create_chart(chart_type: &str, id: &str) -> String {
-    format!(r##"<canvas id="{}"></canvas><script>new Chart(document.getElementById('{}'), {{ type: '{}', data: {{ datasets: [{{ data: [10, 20] }}] }} }});</script>"##, id, id, chart_type)
+    format!(
+        r##"<canvas id="{}"></canvas><script>new Chart(document.getElementById('{}'), {{ type: '{}', data: {{ datasets: [{{ data: [10, 20] }}] }} }});</script>"##,
+        id, id, chart_type
+    )
 }
 
 fn create_complex_table(cols: &[String]) -> String {
-    let headers = cols.iter().map(|c| format!("<th>{}</th>", c)).collect::<Vec<_>>().join("");
-    format!(r##"<table class="table w-full"><thead><tr>{}</tr></thead><tbody><tr><td>Data</td></tr></tbody></table>"##, headers)
+    let headers = cols
+        .iter()
+        .map(|c| format!("<th>{}</th>", c))
+        .collect::<Vec<_>>()
+        .join("");
+    format!(
+        r##"<table class="table w-full"><thead><tr>{}</tr></thead><tbody><tr><td>Data</td></tr></tbody></table>"##,
+        headers
+    )
 }
 
 // Main Server
@@ -738,170 +803,295 @@ struct JsonRpcError {
     data: Option<Value>,
 }
 
-// Simple internal handling of requests
 fn main() -> Result<()> {
-    // Engraving
     eprintln!("Daisy Days - Engraved by Ahmad Hamdi");
-    
-    // Load docs from memory
+
     let docs = Arc::new(DocsCache::load());
     let concepts = Arc::new(ConceptEngine::new());
-    
+
     let stdin = io::stdin();
     let mut reader = stdin.lock();
     let mut line = String::new();
+    let mut stdout = io::stdout();
 
     loop {
         line.clear();
         match reader.read_line(&mut line) {
-            Ok(0) => break,
+            Ok(0) => {
+                eprintln!("daisy_days: received EOF, shutting down gracefully");
+                break;
+            }
             Ok(_) => {
                 let req_str = line.trim();
-                let req_str = req_str.trim_matches('\u{0}'); // sanitize
-                if req_str.is_empty() { continue; }
-                
+                let req_str = req_str.trim_matches('\u{0}');
+                if req_str.is_empty() {
+                    continue;
+                }
+
                 match serde_json::from_str::<JsonRpcRequest>(req_str) {
                     Ok(req) => {
                         let res = handle_request(req, docs.clone(), concepts.clone());
-                        if let Ok(res_str) = serde_json::to_string(&res) {
-                            println!("{}", res_str);
+                        match serde_json::to_string(&res) {
+                            Ok(res_str) => {
+                                if let Err(e) = writeln!(stdout, "{}", res_str) {
+                                    eprintln!("daisy_days: failed to write response: {}", e);
+                                    break;
+                                }
+                                if let Err(e) = stdout.flush() {
+                                    eprintln!("daisy_days: failed to flush output: {}", e);
+                                    break;
+                                }
+                            }
+                            Err(e) => {
+                                eprintln!("daisy_days: failed to serialize response: {}", e);
+                                let err_response = JsonRpcResponse {
+                                    jsonrpc: "2.0".to_string(),
+                                    result: None,
+                                    error: Some(JsonRpcError {
+                                        code: -32603,
+                                        message: format!("Internal error: serialization failed"),
+                                        data: None,
+                                    }),
+                                    id: res.id.clone(),
+                                };
+                                if let Ok(err_str) = serde_json::to_string(&err_response) {
+                                    let _ = writeln!(stdout, "{}", err_str);
+                                    let _ = stdout.flush();
+                                }
+                            }
                         }
                     }
                     Err(e) => {
-                         // Fallback for minimal error
-                         println!(r#"{{"jsonrpc":"2.0","error":{{"code":-32700,"message":"Parse error: {}"}},"id":null}}"#, e);
+                        eprintln!("daisy_days: failed to parse JSON-RPC request: {}", e);
+                        let err_str = format!(
+                            r#"{{"jsonrpc":"2.0","error":{{"code":-32700,"message":"Parse error"}},"id":null}}"#
+                        );
+                        let _ = writeln!(stdout, "{}", err_str);
+                        let _ = stdout.flush();
                     }
                 }
             }
-            Err(_) => { break; }
+            Err(e) => {
+                eprintln!("daisy_days: stdin read error: {}, terminating", e);
+                break;
+            }
         }
     }
+
+    eprintln!("daisy_days: server stopped");
     Ok(())
 }
 
-fn handle_request(req: JsonRpcRequest, docs: Arc<DocsCache>, concepts: Arc<ConceptEngine>) -> JsonRpcResponse {
+fn handle_request(
+    req: JsonRpcRequest,
+    docs: Arc<DocsCache>,
+    concepts: Arc<ConceptEngine>,
+) -> JsonRpcResponse {
     let id = req.id.clone();
-    
+
     let result = match req.method.as_str() {
-        "initialize" => {
-             Ok(json!({
-                "protocolVersion": "0.1",
-                "serverInfo": { "name": "daisy-days", "version": "1.1.0 (Author: Ahmad Hamdi)" },
-                "capabilities": {
-                    "tools": { "listChanged": false },
-                    "resources": { "listChanged": false }
-                }
-            }))
-        },
+        "initialize" => Ok(json!({
+            "protocolVersion": "2024-11-05",
+            "serverInfo": { "name": "daisy-days", "version": "1.1.0" },
+            "capabilities": {
+                "tools": {}
+            }
+        })),
         "notifications/initialized" => Ok(json!("OK")),
-        "tools/list" => {
-            Ok(json!({
-                "tools": [
-                    { "name": "daisyui_idea_to_ui", "description": "Turn a prompt into a stunning UI.", "inputSchema": { "type": "object", "properties": { "prompt": { "type": "string" } }, "required": ["prompt"] } },
-                    { 
-                        "name": "daisyui_scaffold_layout", 
-                        "description": "Generate a modern web layout skeleton.", 
-                        "inputSchema": { 
-                            "type": "object", 
-                            "properties": { 
-                                "layout": { "type": "string", "enum": ["saas", "blog", "social", "kanban", "inbox", "profile", "docs", "dashboard", "auth"], "description": "Layout type" },
-                                "title": { "type": "string" }
-                            },
-                            "required": ["layout"]
-                        } 
-                    },
-                    { "name": "daisyui_list_components", "description": "List components.", "inputSchema": { "type": "object", "properties": {} } },
-                    { "name": "daisyui_get_docs", "description": "Get docs.", "inputSchema": { "type": "object", "properties": { "component": { "type": "string" } }, "required": ["component"] } },
-                    { "name": "daisyui_search", "description": "Search docs.", "inputSchema": { "type": "object", "properties": { "query": { "type": "string" } } } },
-                    { "name": "daisyui_get_concept", "description": "Get concept.", "inputSchema": { "type": "object", "properties": { "concept": { "type": "string" } } } },
-                    { "name": "daisyui_list_concepts", "description": "List concepts.", "inputSchema": { "type": "object", "properties": {} } },
-                    { "name": "daisyui_scaffold_dashboard", "description": "Generate Dashboard (Legacy).", "inputSchema": { "type": "object", "properties": { "title": { "type": "string" }, "style": { "type": "string" } } } },
-                    { "name": "daisyui_scaffold_auth", "description": "Generate Auth (Legacy).", "inputSchema": { "type": "object", "properties": { "type": { "type": "string" } } } },
-                    { "name": "daisyui_scaffold_store", "description": "Generate Store (Legacy).", "inputSchema": { "type": "object", "properties": { "page": { "type": "string" } } } },
-                    { "name": "daisyui_create_chart", "description": "Generate Chart.", "inputSchema": { "type": "object", "properties": { "type": { "type": "string" }, "id": { "type": "string" } } } },
-                    { "name": "daisyui_create_table", "description": "Generate Table.", "inputSchema": { "type": "object", "properties": { "columns": { "type": "array" } } } },
-                    { "name": "daisyui_generate_theme", "description": "Generate Theme.", "inputSchema": { "type": "object", "properties": { "name": { "type": "string" }, "primary": { "type": "string" }, "base": { "type": "string" } } } },
-                    { "name": "daisyui_scaffold_form", "description": "Generate Form.", "inputSchema": { "type": "object", "properties": { "title": { "type": "string" }, "fields": { "type": "array" } } } },
-                    { "name": "daisyui_get_script", "description": "Get Script.", "inputSchema": { "type": "object", "properties": { "component": { "type": "string" } } } }
-                ]
-            }))
-        },
+        "tools/list" => Ok(json!({
+            "tools": [
+                { "name": "daisyui_idea_to_ui", "description": "Turn a prompt into a stunning UI.", "inputSchema": { "type": "object", "properties": { "prompt": { "type": "string" } }, "required": ["prompt"] } },
+                {
+                    "name": "daisyui_scaffold_layout",
+                    "description": "Generate a modern web layout skeleton.",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {
+                            "layout": { "type": "string", "enum": ["saas", "blog", "social", "kanban", "inbox", "profile", "docs", "dashboard", "auth"], "description": "Layout type" },
+                            "title": { "type": "string" }
+                        },
+                        "required": ["layout"]
+                    }
+                },
+                { "name": "daisyui_list_components", "description": "List components.", "inputSchema": { "type": "object", "properties": {} } },
+                { "name": "daisyui_get_docs", "description": "Get docs.", "inputSchema": { "type": "object", "properties": { "component": { "type": "string" } }, "required": ["component"] } },
+                { "name": "daisyui_search", "description": "Search docs.", "inputSchema": { "type": "object", "properties": { "query": { "type": "string" } } } },
+                { "name": "daisyui_get_concept", "description": "Get concept.", "inputSchema": { "type": "object", "properties": { "concept": { "type": "string" } } } },
+                { "name": "daisyui_list_concepts", "description": "List concepts.", "inputSchema": { "type": "object", "properties": {} } },
+                { "name": "daisyui_scaffold_dashboard", "description": "Generate Dashboard (Legacy).", "inputSchema": { "type": "object", "properties": { "title": { "type": "string" }, "style": { "type": "string" } } } },
+                { "name": "daisyui_scaffold_auth", "description": "Generate Auth (Legacy).", "inputSchema": { "type": "object", "properties": { "type": { "type": "string" } } } },
+                { "name": "daisyui_scaffold_store", "description": "Generate Store (Legacy).", "inputSchema": { "type": "object", "properties": { "page": { "type": "string" } } } },
+                { "name": "daisyui_create_chart", "description": "Generate Chart.", "inputSchema": { "type": "object", "properties": { "type": { "type": "string" }, "id": { "type": "string" } } } },
+                { "name": "daisyui_create_table", "description": "Generate Table.", "inputSchema": { "type": "object", "properties": { "columns": { "type": "array" } } } },
+                { "name": "daisyui_generate_theme", "description": "Generate Theme.", "inputSchema": { "type": "object", "properties": { "name": { "type": "string" }, "primary": { "type": "string" }, "base": { "type": "string" } } } },
+                { "name": "daisyui_scaffold_form", "description": "Generate Form.", "inputSchema": { "type": "object", "properties": { "title": { "type": "string" }, "fields": { "type": "array" } } } },
+                { "name": "daisyui_get_script", "description": "Get Script.", "inputSchema": { "type": "object", "properties": { "component": { "type": "string" } } } }
+            ]
+        })),
         "tools/call" => {
             if let Some(params) = req.params {
                 let name = params["name"].as_str().unwrap_or("");
                 let args = params["arguments"].as_object();
 
                 match name {
-                     "daisyui_idea_to_ui" => {
-                        let prompt = args.and_then(|a| a.get("prompt")).and_then(|v| v.as_str()).unwrap_or("");
+                    "daisyui_idea_to_ui" => {
+                        let prompt = args
+                            .and_then(|a| a.get("prompt"))
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("");
                         let html = IdeaEngine::process_prompt(prompt);
                         Ok(json!({ "content": [{ "type": "text", "text": html }] }))
-                     },
-                     "daisyui_scaffold_layout" => {
-                        let layout = args.and_then(|a| a.get("layout")).and_then(|v| v.as_str()).unwrap_or("saas");
-                        let title = args.and_then(|a| a.get("title")).and_then(|v| v.as_str()).unwrap_or("My App");
-                        Ok(json!({ "content": [{ "type": "text", "text": LayoutEngine::generate(layout, title) }] }))
-                     },
-                     "daisyui_list_components" => Ok(json!({ "content": [{ "type": "text", "text": docs.list_components().join(", ") }] })),
-                     "daisyui_get_docs" => {
-                        let c = args.and_then(|a| a.get("component")).and_then(|v| v.as_str()).unwrap_or("");
-                        Ok(json!({ "content": [{ "type": "text", "text": docs.get_doc(c).unwrap_or("Not found".to_string()) }] }))
-                     },
-                     "daisyui_search" => {
-                         let q = args.and_then(|a| a.get("query")).and_then(|v| v.as_str()).unwrap_or("");
-                         Ok(json!({ "content": [{ "type": "text", "text": format!("Found {}", docs.search(q).len()) }] }))
-                     },
-                     "daisyui_get_concept" => {
-                         let c = args.and_then(|a| a.get("concept")).and_then(|v| v.as_str()).unwrap_or("");
-                         Ok(json!({ "content": [{ "type": "text", "text": format!("{:?}", concepts.get_concept(c)) }] }))
-                     },
-                     "daisyui_list_concepts" => Ok(json!({ "content": [{ "type": "text", "text": concepts.list_concepts().join(", ") }] })),
-                     "daisyui_scaffold_dashboard" => {
-                         let t = args.and_then(|a| a.get("title")).and_then(|v| v.as_str()).unwrap_or("Dash");
-                         Ok(json!({ "content": [{ "type": "text", "text": generate_dashboard(t, &[], "") }] }))
-                     },
-                     "daisyui_scaffold_auth" => {
-                         let t = args.and_then(|a| a.get("type")).and_then(|v| v.as_str()).unwrap_or("login");
-                         Ok(json!({ "content": [{ "type": "text", "text": generate_auth(t) }] }))
-                     },
-                     "daisyui_scaffold_store" => {
-                         let p = args.and_then(|a| a.get("page")).and_then(|v| v.as_str()).unwrap_or("home");
-                         Ok(json!({ "content": [{ "type": "text", "text": generate_store(p) }] }))
-                     },
-                     "daisyui_create_chart" => {
-                         let t = args.and_then(|a| a.get("type")).and_then(|v| v.as_str()).unwrap_or("bar");
-                         let id = args.and_then(|a| a.get("id")).and_then(|v| v.as_str()).unwrap_or("c1");
-                         Ok(json!({ "content": [{ "type": "text", "text": create_chart(t, id) }] }))
-                     },
-                     "daisyui_create_table" => {
-                         Ok(json!({ "content": [{ "type": "text", "text": create_complex_table(&[]) }] }))
-                     },
-                     "daisyui_generate_theme" => {
-                        let name = args.and_then(|a| a.get("name")).and_then(|v| v.as_str()).unwrap_or("mytheme");
-                        let p = args.and_then(|a| a.get("primary")).and_then(|v| v.as_str()).unwrap_or("#000");
-                        let b = args.and_then(|a| a.get("base")).and_then(|v| v.as_str()).unwrap_or("#fff");
-                        Ok(json!({ "content": [{ "type": "text", "text": generate_theme(name, p, "", "", b) }] }))
-                     },
-                     "daisyui_scaffold_form" => {
-                         let t = args.and_then(|a| a.get("title")).and_then(|v| v.as_str()).unwrap_or("Form");
-                         Ok(json!({ "content": [{ "type": "text", "text": scaffold_form(t, &[]) }] }))
-                     },
-                     "daisyui_get_script" => {
-                         let c = args.and_then(|a| a.get("component")).and_then(|v| v.as_str()).unwrap_or("");
-                         Ok(json!({ "content": [{ "type": "text", "text": get_script(c) }] }))
-                     },
+                    }
+                    "daisyui_scaffold_layout" => {
+                        let layout = args
+                            .and_then(|a| a.get("layout"))
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("saas");
+                        let title = args
+                            .and_then(|a| a.get("title"))
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("My App");
+                        Ok(
+                            json!({ "content": [{ "type": "text", "text": LayoutEngine::generate(layout, title) }] }),
+                        )
+                    }
+                    "daisyui_list_components" => Ok(
+                        json!({ "content": [{ "type": "text", "text": docs.list_components().join(", ") }] }),
+                    ),
+                    "daisyui_get_docs" => {
+                        let c = args
+                            .and_then(|a| a.get("component"))
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("");
+                        Ok(
+                            json!({ "content": [{ "type": "text", "text": docs.get_doc(c).unwrap_or("Not found".to_string()) }] }),
+                        )
+                    }
+                    "daisyui_search" => {
+                        let q = args
+                            .and_then(|a| a.get("query"))
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("");
+                        Ok(
+                            json!({ "content": [{ "type": "text", "text": format!("Found {}", docs.search(q).len()) }] }),
+                        )
+                    }
+                    "daisyui_get_concept" => {
+                        let c = args
+                            .and_then(|a| a.get("concept"))
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("");
+                        Ok(
+                            json!({ "content": [{ "type": "text", "text": format!("{:?}", concepts.get_concept(c)) }] }),
+                        )
+                    }
+                    "daisyui_list_concepts" => Ok(
+                        json!({ "content": [{ "type": "text", "text": concepts.list_concepts().join(", ") }] }),
+                    ),
+                    "daisyui_scaffold_dashboard" => {
+                        let t = args
+                            .and_then(|a| a.get("title"))
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("Dash");
+                        Ok(
+                            json!({ "content": [{ "type": "text", "text": generate_dashboard(t, &[], "") }] }),
+                        )
+                    }
+                    "daisyui_scaffold_auth" => {
+                        let t = args
+                            .and_then(|a| a.get("type"))
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("login");
+                        Ok(json!({ "content": [{ "type": "text", "text": generate_auth(t) }] }))
+                    }
+                    "daisyui_scaffold_store" => {
+                        let p = args
+                            .and_then(|a| a.get("page"))
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("home");
+                        Ok(json!({ "content": [{ "type": "text", "text": generate_store(p) }] }))
+                    }
+                    "daisyui_create_chart" => {
+                        let t = args
+                            .and_then(|a| a.get("type"))
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("bar");
+                        let id = args
+                            .and_then(|a| a.get("id"))
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("c1");
+                        Ok(json!({ "content": [{ "type": "text", "text": create_chart(t, id) }] }))
+                    }
+                    "daisyui_create_table" => Ok(
+                        json!({ "content": [{ "type": "text", "text": create_complex_table(&[]) }] }),
+                    ),
+                    "daisyui_generate_theme" => {
+                        let name = args
+                            .and_then(|a| a.get("name"))
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("mytheme");
+                        let p = args
+                            .and_then(|a| a.get("primary"))
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("#000");
+                        let b = args
+                            .and_then(|a| a.get("base"))
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("#fff");
+                        Ok(
+                            json!({ "content": [{ "type": "text", "text": generate_theme(name, p, "", "", b) }] }),
+                        )
+                    }
+                    "daisyui_scaffold_form" => {
+                        let t = args
+                            .and_then(|a| a.get("title"))
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("Form");
+                        Ok(
+                            json!({ "content": [{ "type": "text", "text": scaffold_form(t, &[]) }] }),
+                        )
+                    }
+                    "daisyui_get_script" => {
+                        let c = args
+                            .and_then(|a| a.get("component"))
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("");
+                        Ok(json!({ "content": [{ "type": "text", "text": get_script(c) }] }))
+                    }
 
-                    _ => Err(JsonRpcError { code: -32601, message: format!("Unknown tool: {}", name), data: None })
+                    _ => Err(JsonRpcError {
+                        code: -32601,
+                        message: format!("Unknown tool: {}", name),
+                        data: None,
+                    }),
                 }
             } else {
-                 Err(JsonRpcError { code: -32602, message: "Missing params".to_string(), data: None })
+                Err(JsonRpcError {
+                    code: -32602,
+                    message: "Missing params".to_string(),
+                    data: None,
+                })
             }
-        },
-        _ => Err(JsonRpcError { code: -32601, message: "Method not found".to_string(), data: None })
+        }
+        _ => Err(JsonRpcError {
+            code: -32601,
+            message: "Method not found".to_string(),
+            data: None,
+        }),
     };
 
     match result {
-        Ok(val) => JsonRpcResponse { jsonrpc: "2.0".to_string(), result: Some(val), error: None, id },
-        Err(err) => JsonRpcResponse { jsonrpc: "2.0".to_string(), result: None, error: Some(err), id }
+        Ok(val) => JsonRpcResponse {
+            jsonrpc: "2.0".to_string(),
+            result: Some(val),
+            error: None,
+            id,
+        },
+        Err(err) => JsonRpcResponse {
+            jsonrpc: "2.0".to_string(),
+            result: None,
+            error: Some(err),
+            id,
+        },
     }
 }
