@@ -4,8 +4,8 @@ resolver = "2"
 
 [package]
 name = "daisy_days_extension"
-version = "0.2.0"
-edition = "2021"
+version = "0.3.0"
+edition = "2024"
 authors = ["Ahmad Hamdi"]
 description = "Zed extension for DaisyUI"
 

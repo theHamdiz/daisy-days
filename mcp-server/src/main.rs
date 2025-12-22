@@ -5,27 +5,36 @@ use std::collections::HashMap;
 use std::io::{self, BufRead, Write};
 use std::sync::Arc;
 
-// Embed docs directly for offline/wasm usage
 const DAISYUI_DOCS_CONTENT: &str = include_str!("llms.txt");
 
 #[derive(Debug, Clone)]
 struct DocsCache {
     components: HashMap<String, String>,
+    index: HashMap<String, Vec<String>>,
 }
 
 impl DocsCache {
     fn load() -> Self {
         let mut components = HashMap::new();
+        let mut index: HashMap<String, Vec<String>> = HashMap::new();
         let mut current_component = String::new();
         let mut current_content = String::new();
 
         for line in DAISYUI_DOCS_CONTENT.lines() {
             if let Some(stripped) = line.strip_prefix("### ") {
                 if !current_component.is_empty() {
-                    components.insert(
-                        current_component.trim().to_lowercase(),
-                        current_content.trim().to_string(),
-                    );
+                    let key = current_component.trim().to_lowercase();
+                    components.insert(key.clone(), current_content.trim().to_string());
+
+                    for word in current_content.split_whitespace() {
+                        let word_lower = word.to_lowercase();
+                        if word_lower.len() > 3 {
+                            index
+                                .entry(word_lower)
+                                .or_insert_with(Vec::new)
+                                .push(key.clone());
+                        }
+                    }
                 }
                 current_component = stripped.to_string();
                 current_content = String::new();
@@ -37,12 +46,20 @@ impl DocsCache {
             }
         }
         if !current_component.is_empty() {
-            components.insert(
-                current_component.trim().to_lowercase(),
-                current_content.trim().to_string(),
-            );
+            let key = current_component.trim().to_lowercase();
+            components.insert(key.clone(), current_content.trim().to_string());
+
+            for word in current_content.split_whitespace() {
+                let word_lower = word.to_lowercase();
+                if word_lower.len() > 3 {
+                    index
+                        .entry(word_lower)
+                        .or_insert_with(Vec::new)
+                        .push(key.clone());
+                }
+            }
         }
-        DocsCache { components }
+        DocsCache { components, index }
     }
 
     fn list_components(&self) -> Vec<String> {
@@ -52,23 +69,57 @@ impl DocsCache {
     }
 
     fn get_doc(&self, name: &str) -> Option<String> {
+        if name.is_empty() {
+            return None;
+        }
         self.components.get(&name.to_lowercase()).cloned()
     }
 
     fn search(&self, query: &str) -> Vec<(String, String)> {
+        if query.is_empty() {
+            return Vec::new();
+        }
+
         let query = query.to_lowercase();
         let mut results = Vec::new();
+        let mut scores: HashMap<String, usize> = HashMap::new();
+
         for (name, content) in &self.components {
-            if name.contains(&query) || content.to_lowercase().contains(&query) {
-                results.push((name.clone(), content.clone()));
+            let mut score = 0;
+
+            if name.contains(&query) {
+                score += 100;
+            }
+
+            if content.to_lowercase().contains(&query) {
+                score += 10;
+            }
+
+            for word in query.split_whitespace() {
+                if let Some(matches) = self.index.get(word) {
+                    if matches.contains(name) {
+                        score += 5;
+                    }
+                }
+            }
+
+            if score > 0 {
+                scores.insert(name.clone(), score);
             }
         }
-        results.sort_by(|a, b| a.0.cmp(&b.0));
+
+        let mut sorted_keys: Vec<_> = scores.keys().cloned().collect();
+        sorted_keys.sort_by(|a, b| scores[b].cmp(&scores[a]).then(a.cmp(b)));
+
+        for key in sorted_keys.iter().take(20) {
+            if let Some(content) = self.components.get(key) {
+                results.push((key.clone(), content.clone()));
+            }
+        }
+
         results
     }
 }
-
-// Concept Definitions
 
 #[derive(Debug, Clone, Serialize)]
 struct DesignConcept {
@@ -86,20 +137,59 @@ struct ConceptEngine {
 impl ConceptEngine {
     fn new() -> Self {
         let mut m = HashMap::new();
+
         m.insert(
             "glassmorphism".to_string(),
             DesignConcept {
                 name: "Glassmorphism".to_string(),
-                description: "Transparency and blur.".to_string(),
+                description: "Frosted glass aesthetic with transparency and blur effects".to_string(),
                 classes: vec!["glass".to_string(), "backdrop-blur".to_string()],
-                suggestion: "Use .glass on cards.".to_string(),
-                snippet: r##"<div class="card glass"></div>"##.to_string(),
+                suggestion: "Apply glass class to cards and modals for depth".to_string(),
+                snippet: r##"<div class="card glass w-96 shadow-xl"><div class="card-body">Content</div></div>"##.to_string(),
             },
         );
+
+        m.insert(
+            "neumorphism".to_string(),
+            DesignConcept {
+                name: "Neumorphism".to_string(),
+                description: "Soft shadows creating extruded surface effect".to_string(),
+                classes: vec!["shadow-lg".to_string(), "bg-base-200".to_string()],
+                suggestion: "Combine soft shadows with subtle gradients".to_string(),
+                snippet: r##"<button class="btn shadow-lg bg-base-200">Button</button>"##
+                    .to_string(),
+            },
+        );
+
+        m.insert(
+            "darkmode".to_string(),
+            DesignConcept {
+                name: "Dark Mode".to_string(),
+                description: "Dark color scheme with high contrast for reduced eye strain".to_string(),
+                classes: vec!["bg-base-100".to_string(), "text-base-content".to_string()],
+                suggestion: "Use data-theme attribute to toggle between light and dark themes".to_string(),
+                snippet: r##"<html data-theme="dark"><body class="bg-base-100 text-base-content">Content</body></html>"##.to_string(),
+            },
+        );
+
+        m.insert(
+            "gradient".to_string(),
+            DesignConcept {
+                name: "Gradients".to_string(),
+                description: "Color transitions for visual depth and interest".to_string(),
+                classes: vec!["bg-gradient-to-r".to_string(), "from-primary".to_string(), "to-secondary".to_string()],
+                suggestion: "Use gradients sparingly on hero sections and CTAs".to_string(),
+                snippet: r##"<div class="bg-gradient-to-r from-primary to-secondary p-8">Hero Content</div>"##.to_string(),
+            },
+        );
+
         Self { concepts: m }
     }
 
     fn get_concept(&self, query: &str) -> Option<&DesignConcept> {
+        if query.is_empty() {
+            return None;
+        }
         self.concepts.get(&query.to_lowercase())
     }
 
@@ -110,25 +200,32 @@ impl ConceptEngine {
     }
 }
 
-// Layout Generation Logic
-
 struct LayoutEngine;
 
 impl LayoutEngine {
     fn generate(layout: &str, title: &str) -> String {
+        let sanitized_title = Self::sanitize_text(title);
+
         match layout {
-            "saas" => Self::saas_landing(title),
-            "blog" => Self::blog_layout(title),
-            "social" => Self::social_feed(title),
-            "kanban" => Self::kanban_board(title),
-            "inbox" => Self::inbox_layout(title),
-            "profile" => Self::settings_profile(title),
-            "docs" => Self::docs_layout(title),
-            "dashboard" => Self::dashboard(title),
-            "auth" => Self::auth_page(title),
-            "store" => Self::store_page(title),
-            _ => Self::saas_landing(title), // Default
+            "saas" => Self::saas_landing(&sanitized_title),
+            "blog" => Self::blog_layout(&sanitized_title),
+            "social" => Self::social_feed(&sanitized_title),
+            "kanban" => Self::kanban_board(&sanitized_title),
+            "inbox" => Self::inbox_layout(&sanitized_title),
+            "profile" => Self::settings_profile(&sanitized_title),
+            "docs" => Self::docs_layout(&sanitized_title),
+            "dashboard" => Self::dashboard(&sanitized_title),
+            "auth" => Self::auth_page(&sanitized_title),
+            "store" => Self::store_page(&sanitized_title),
+            _ => Self::saas_landing(&sanitized_title),
         }
+    }
+
+    fn sanitize_text(text: &str) -> String {
+        text.chars()
+            .filter(|c| c.is_alphanumeric() || c.is_whitespace() || *c == '-' || *c == '_')
+            .take(100)
+            .collect()
     }
 
     fn saas_landing(title: &str) -> String {
@@ -230,8 +327,8 @@ impl LayoutEngine {
     <div class="card lg:card-side bg-base-200 shadow-xl mb-16">
       <figure class="lg:w-1/2"><img src="https://img.daisyui.com/images/stock/photo-1494232410401-ad00d5433cfa.jpg" class="h-full object-cover" /></figure>
       <div class="card-body lg:w-1/2 justify-center">
-        <h2 class="card-title text-4xl mb-4 font-serif">The Future of AI Design</h2>
-        <p class="text-lg">How artificial intelligence is reshaping the way we build interfaces.</p>
+        <h2 class="card-title text-4xl mb-4 font-serif">The Evolution of Modern Web Development</h2>
+        <p class="text-lg">Exploring cutting-edge patterns and practices shaping the future of user interfaces.</p>
         <div class="card-actions justify-start mt-4">
           <button class="btn btn-primary">Read Article</button>
         </div>
@@ -247,9 +344,9 @@ impl LayoutEngine {
             <div class="flex gap-6 items-start">
                <img src="https://img.daisyui.com/images/stock/photo-1559181567-c3190ca9959b.jpg" class="w-32 h-32 rounded-xl object-cover" />
                <div>
-                  <div class="badge badge-ghost mb-2">Tech</div>
-                  <h4 class="text-xl font-bold hover:text-primary cursor-pointer">Rust vs Go in 2025</h4>
-                  <p class="text-base-content/70 mt-2">A deep dive into system performance.</p>
+                  <div class="badge badge-ghost mb-2">Technology</div>
+                  <h4 class="text-xl font-bold hover:text-primary cursor-pointer">Rust vs Go in Production</h4>
+                  <p class="text-base-content/70 mt-2">A comprehensive analysis of system performance and developer experience.</p>
                   <div class="text-sm mt-2 opacity-50">Dec 9 • 5 min read</div>
                </div>
             </div>
@@ -257,9 +354,9 @@ impl LayoutEngine {
              <div class="flex gap-6 items-start">
                <img src="https://img.daisyui.com/images/stock/photo-1601004890684-d8cbf643f5f2.jpg" class="w-32 h-32 rounded-xl object-cover" />
                <div>
-                  <div class="badge badge-ghost mb-2">Lifestyle</div>
+                  <div class="badge badge-ghost mb-2">Design</div>
                   <h4 class="text-xl font-bold hover:text-primary cursor-pointer">Digital Minimalism</h4>
-                  <p class="text-base-content/70 mt-2">Reclaiming your attention span.</p>
+                  <p class="text-base-content/70 mt-2">Reclaiming focus in an age of endless distraction.</p>
                   <div class="text-sm mt-2 opacity-50">Dec 8 • 3 min read</div>
                </div>
             </div>
@@ -328,7 +425,7 @@ impl LayoutEngine {
          <div class="avatar"><div class="w-12 rounded-full"><img src="https://img.daisyui.com/images/stock/photo-1606107557195-0e29a4b5b4aa.jpg" /></div></div>
          <div>
             <div class="flex gap-2 items-center"><span class="font-bold">Jane Doe</span> <span class="text-sm opacity-50">@janedoe • 2h</span></div>
-            <p class="mt-1">Just shipped a new update for my MCP server! Rust is blazing fast. 🦀🚀</p>
+            <p class="mt-1">Just shipped a new update for the platform! Rust is blazing fast. 🦀🚀</p>
             <div class="flex justify-between mt-3 max-w-sm text-sm opacity-60">
                <button class="hover:text-primary">💬 12</button>
                <button class="hover:text-green-500">♻️ 4</button>
@@ -670,8 +767,6 @@ impl LayoutEngine {
     }
 }
 
-// Prompt Processing Logic
-
 struct IdeaEngine;
 
 impl IdeaEngine {
@@ -699,16 +794,12 @@ impl IdeaEngine {
         } else if p.contains("dashboard") || p.contains("admin") {
             "dashboard"
         } else {
-            "saas" // Default modern skeleton
+            "saas"
         };
 
-        // Pass to LayoutEngine
         LayoutEngine::generate(layout, "Generated UI")
     }
 }
-
-// Legacy Generator Wrappers
-// Maintained for backward compatibility
 
 fn generate_dashboard(title: &str, _items: &[String], _style: &str) -> String {
     LayoutEngine::generate("dashboard", title)
@@ -752,7 +843,7 @@ fn get_script(component: &str) -> String {
     match component {
         "modal" => "document.getElementById('my_modal_1').showModal();".to_string(),
         "drawer" => "document.getElementById('my-drawer').checked = !document.getElementById('my-drawer').checked;".to_string(),
-        _ => "// No script".to_string()
+        _ => "".to_string()
     }
 }
 
@@ -774,8 +865,6 @@ fn create_complex_table(cols: &[String]) -> String {
         headers
     )
 }
-
-// Main Server
 
 #[derive(Serialize, Deserialize, Debug)]
 struct JsonRpcRequest {

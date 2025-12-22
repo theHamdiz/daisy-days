@@ -1,10 +1,35 @@
 id = "daisy-days"
 name = "Daisy Days"
-version = "0.2.0"
+version = "0.3.0"
 schema_version = 1
 authors = ["Ahmad Hamdi"]
-description = "A high-performance MCP server for DaisyUI with 15 tools that generates production-ready UI layouts."
+description = "DaisyUI extension with docs search, design concepts, and layout generation."
 repository = "https://github.com/theHamdiz/daisy-days"
 
-[server]
-binary = "daisy_days"
+[slash_commands.daisy-search]
+description = "Search DaisyUI documentation"
+requires_argument = true
+
+[slash_commands.daisy-doc]
+description = "Get documentation for a specific DaisyUI component"
+requires_argument = true
+
+[slash_commands.daisy-components]
+description = "List all available DaisyUI components"
+requires_argument = false
+
+[slash_commands.daisy-concept]
+description = "Get a design concept (glassmorphism, neumorphism, darkmode, gradient, skeleton, responsive)"
+requires_argument = true
+
+[slash_commands.daisy-concepts]
+description = "List all available design concepts"
+requires_argument = false
+
+[slash_commands.daisy-layout]
+description = "Generate an HTML layout (saas, blog, social, kanban, inbox, profile, docs, dashboard, auth, store)"
+requires_argument = true
+
+[slash_commands.daisy-layouts]
+description = "List all available layout types"
+requires_argument = false
