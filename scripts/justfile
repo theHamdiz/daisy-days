@@ -1,0 +1,94 @@
+# Daisy Days - Build Automation
+# Run from project root: just -f scripts/justfile [recipe]
+
+set shell := ["sh", "-c"]
+root := parent_directory(justfile_directory())
+
+default: build
+
+# Build both MCP server and WASM extension
+build: build-server build-wasm
+    @echo "[OK] Build complete"
+
+# Build MCP server (native binary)
+build-server:
+    @echo "[INFO] Building MCP server..."
+    cd {{root}} && cargo build --release -p daisy_days_mcp
+    @echo "[OK] MCP server built: target/release/daisy_days"
+
+# Build WASM extension
+build-wasm:
+    @echo "[INFO] Building WASM extension..."
+    cd {{root}} && DAISY_SKIP_SERVER=1 cargo build --release --target wasm32-wasip1
+    @echo "[OK] WASM extension built"
+
+# Install wasm target if needed
+install-wasm-target:
+    rustup target add wasm32-wasip1
+
+# Package extension to target/dist/
+package: build
+    @echo "[INFO] Packaging extension..."
+    mkdir -p {{root}}/target/dist
+    cp {{root}}/target/release/daisy_days {{root}}/target/dist/ 2>/dev/null || cp {{root}}/target/release/daisy_days.exe {{root}}/target/dist/ 2>/dev/null || true
+    cp {{root}}/target/wasm32-wasip1/release/daisy_days_extension.wasm {{root}}/target/dist/extension.wasm
+    cp {{root}}/extension.toml {{root}}/target/dist/
+    cp {{root}}/LICENSE {{root}}/target/dist/ 2>/dev/null || true
+    cp {{root}}/README.md {{root}}/target/dist/ 2>/dev/null || true
+    @echo "[OK] Package ready in target/dist/"
+
+# Clean build artifacts
+clean:
+    cd {{root}} && cargo clean
+
+# Run tests
+test:
+    cd {{root}} && cargo test --all
+
+# Check code without building
+check:
+    cd {{root}} && cargo check --all
+    cd {{root}} && DAISY_SKIP_SERVER=1 cargo check --target wasm32-wasip1
+
+# Format code
+fmt:
+    cd {{root}} && cargo fmt --all
+
+# Lint code
+lint:
+    cd {{root}} && cargo clippy --all -- -D warnings
+
+# Build and copy to Zed extensions directory (Unix)
+[unix]
+install-local: build
+    @echo "[INFO] Installing to local Zed extensions..."
+    mkdir -p ~/.config/zed/extensions/daisy-days
+    cp {{root}}/target/wasm32-wasip1/release/daisy_days_extension.wasm ~/.config/zed/extensions/daisy-days/extension.wasm
+    cp {{root}}/target/release/daisy_days ~/.config/zed/extensions/daisy-days/ 2>/dev/null || true
+    cp {{root}}/extension.toml ~/.config/zed/extensions/daisy-days/
+    @echo "[OK] Installed to ~/.config/zed/extensions/daisy-days"
+
+# Development build (debug mode)
+dev:
+    cd {{root}} && cargo build -p daisy_days_mcp
+    cd {{root}} && DAISY_SKIP_SERVER=1 cargo build --target wasm32-wasip1
+
+# Show extension info
+info:
+    @echo "Daisy Days Extension v0.3.0"
+    @echo ""
+    @echo "Slash Commands:"
+    @echo "  /daisy-search <query>     Search DaisyUI docs"
+    @echo "  /daisy-doc <component>    Get component documentation"
+    @echo "  /daisy-components         List all components"
+    @echo "  /daisy-concept <name>     Get design concept"
+    @echo "  /daisy-concepts           List design concepts"
+    @echo "  /daisy-layout <type>      Generate HTML layout"
+    @echo "  /daisy-layouts            List layout types"
+    @echo ""
+    @echo "Layouts: saas, blog, social, kanban, inbox, profile, docs, dashboard, auth, store"
+    @echo "Concepts: glassmorphism, neumorphism, darkmode, gradient, skeleton, responsive"
+
+# Full release build
+release: clean build package
+    @echo "[OK] Release build complete"

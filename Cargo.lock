@@ -49,14 +49,14 @@ dependencies = [
 
 [[package]]
 name = "daisy_days_extension"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "zed_extension_api",
 ]
 
 [[package]]
 name = "daisy_days_mcp"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "serde",
